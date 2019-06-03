@@ -186,8 +186,14 @@
             },
             precisionValue () {
                 // can not display 1.0
-                if(!this.currentValue) return this.currentValue;
-                return this.precision ? this.currentValue.toFixed(this.precision) : this.currentValue;
+				if(this.precision){
+                    let currentValue = (this.currentValue||0)*1;                    
+					let value = currentValue.toFixed(this.precision+1);
+					//防止四舍五入
+                    let valueStr = value.substring(0,value.lastIndexOf('.') + this.precision + 1);
+					return valueStr.replace(/(\.0+)|(0+)$/,'')*1;
+				}
+				return this.currentValue;
             },
             formatterValue () {
                 if (this.formatter && this.precisionValue !== null) {
@@ -253,7 +259,12 @@
             },
             setValue (val) {
                 // 如果 step 是小数，且没有设置 precision，是有问题的
-                if (val && !isNaN(this.precision)) val = Number(Number(val).toFixed(this.precision));
+                if (val && !isNaN(this.precision)) {
+					let value = Number(val).toFixed(this.precision+1);
+					//防止四舍五入
+					let valueStr = value.substring(0,value.lastIndexOf('.') + this.precision + 1);
+					val = Number(valueStr.replace(/(\.0+)|(0+)$/,''));
+				}
 
                 const {min, max} = this;
                 if (val!==null) {
