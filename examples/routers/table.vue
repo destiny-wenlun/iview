@@ -19,16 +19,19 @@
                     },
                     {
                         title: 'Name',
-                        key: 'name'
+                        key: 'name',
+                        width: 160,
                     },
                     {
                         title: 'Age',
-                        key: 'age'
+                        key: 'age',
+                        width: 160,
                     },
                     {
                         title: 'Address',
                         key: 'address',
-                        tooltip: true
+                        tooltip: true,
+                        width: 160,
                     }
                 ],
                 data1: [

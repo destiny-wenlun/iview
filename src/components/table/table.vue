@@ -1,5 +1,5 @@
 <template>
-    <div :class="wrapClasses" :style="styles">
+    <div ref="warp" :class="wrapClasses" :style="styles">
         <div :class="classes">
             <div :class="[prefixCls + '-title']" v-if="showSlotHeader" ref="title"><slot name="header"></slot></div>
             <div :class="[prefixCls + '-header']" v-if="showHeader" ref="header" @mousewheel="handleMouseWheel">
@@ -10,7 +10,10 @@
                     :column-rows="columnRows"
                     :obj-data="objData"
                     :columns-width="columnsWidth"
-                    :data="rebuildData"></table-head>
+                    :data="rebuildData"
+                    @on-ewResizeBegin="ewResizeBegin"
+					@on-ewResize="ewResize"
+					@on-ewResizeFinish="ewResizeFinish"></table-head>
             </div>
             <div :class="[prefixCls + '-body']" :style="bodyStyle" ref="body" @scroll="handleBodyScroll"
                 v-show="!((!!localeNoDataText && (!data || data.length === 0)) || (!!localeNoFilteredDataText && (!rebuildData || rebuildData.length === 0)))">
@@ -51,7 +54,10 @@
                         :fixed-column-rows="leftFixedColumnRows"
                         :obj-data="objData"
                         :columns-width="columnsWidth"
-                        :data="rebuildData"></table-head>
+                        :data="rebuildData"
+                        @on-ewResizeBegin="ewResizeBegin"
+                        @on-ewResize="ewResize"
+                        @on-ewResizeFinish="ewResizeFinish"></table-head>
                 </div>
                 <div :class="[prefixCls + '-fixed-body']" :style="fixedBodyStyle" ref="fixedBody" @mousewheel="handleFixedMousewheel" @DOMMouseScroll="handleFixedMousewheel">
                     <table-body
@@ -78,7 +84,10 @@
                         :fixed-column-rows="rightFixedColumnRows"
                         :obj-data="objData"
                         :columns-width="columnsWidth"
-                        :data="rebuildData"></table-head>
+                        :data="rebuildData"
+                        @on-ewResizeBegin="ewResizeBegin"
+                        @on-ewResize="ewResize"
+                        @on-ewResizeFinish="ewResizeFinish"></table-head>
                 </div>
                 <div :class="[prefixCls + '-fixed-body']" :style="fixedBodyStyle" ref="fixedRightBody" @mousewheel="handleFixedMousewheel" @DOMMouseScroll="handleFixedMousewheel">
                     <table-body
@@ -97,6 +106,8 @@
             <div :class="[prefixCls + '-fixed-right-header']" :style="fixedRightHeaderStyle" v-if="isRightFixed"></div>
             <div :class="[prefixCls + '-footer']" v-if="showSlotFooter" ref="footer"><slot name="footer"></slot></div>
         </div>
+        <!-- 列拖拽时显示的竖线 -->
+        <div :style="cursorStyle"></div>
         <Spin fix size="large" v-if="loading">
             <slot name="loading"></slot>
         </Spin>
@@ -240,6 +251,8 @@
                 showHorizontalScrollBar:false,
                 headerWidth:0,
                 headerHeight:0,
+                cursorLeft:0, //列宽改变之前的滑动的游标位置
+				cursorShow:false,//是否显示游标
             };
         },
         computed: {
@@ -384,7 +397,11 @@
             },
             isRightFixed () {
                 return this.columns.some(col => col.fixed && col.fixed === 'right');
-            }
+            },
+            //自定义
+			cursorStyle(){				
+				return {position:"absolute",zIndex:10,display:`${this.cursorShow?'block':'none'}`,height:"100%",borderLeft:"1px solid #2db7f5",left:`${this.cursorLeft}px`,top:0}
+			}
         },
         methods: {
             rowClsName (index) {
@@ -954,7 +971,36 @@
             },
             dragAndDrop(a,b) {
                 this.$emit('on-drag-drop', a,b);
-            }
+            },
+            //列宽拖拽开始
+			ewResizeBegin(clientX){
+				//获取表格距离浏览器区域最左边的位置
+				let {left} = this.$refs.warp.getBoundingClientRect();
+				
+				this.cursorShow = true;
+				this.cursorLeft = clientX - left;
+			},
+			//列宽拖拽中
+			ewResize(clientX){
+				//获取表格距离浏览器区域最左边的位置
+				let {left} = this.$refs.warp.getBoundingClientRect();
+				this.cursorLeft = clientX - left;
+			},
+			//列宽拖拽结束
+			ewResizeFinish(obj){
+				this.cursorShow = false;
+				let cloneColumns = [...this.cloneColumns];
+				let w = this.cloneColumns[obj.index].width;
+				w += obj.offsetX;
+				if (w < 50 && obj.offsetX < 0) {
+					w = 50;
+				}
+				if (w > 600 && obj.offsetX > 0) {
+					w = 600;
+				}
+				this.cloneColumns[obj.index].width = w;
+				this.$emit("on-ewResizeFinish",this.cloneColumns);
+			}
         },
         created () {
             if (!this.context) this.currentContext = this.$parent;

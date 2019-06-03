@@ -1,16 +1,19 @@
 <template>
     <table cellspacing="0" cellpadding="0" border="0" :style="styles">
         <colgroup>
-            <col v-for="(column, index) in columns" :width="setCellWidth(column)">
+            <col v-for="(column, index) in columns" :key="index" :width="setCellWidth(column)">
             <col v-if="$parent.showVerticalScrollBar" :width="$parent.scrollBarWidth"/>
         </colgroup>
         <thead>
-            <tr v-for="(cols, rowIndex) in headRows">
+            <tr v-for="(cols, rowIndex) in headRows" :key="rowIndex">
                 <th
                     v-for="(column, index) in cols"
+                    :key="index"
                     :colspan="column.colSpan"
                     :rowspan="column.rowSpan"
-                    :class="alignCls(column)">
+                    :class="alignCls(column)"
+                    @mousemove="thMousemove($event,column)" 
+					@mousedown="ewResizeDown($event,index,column)">
                     <div :class="cellClasses(column)">
                         <template v-if="column.type === 'expand'">
                             <span v-if="!column.renderHeader">{{ column.title || '' }}</span>
@@ -53,7 +56,8 @@
                                             @click="handleReset(getColumn(rowIndex, index)._index)">{{ t('i.table.clearFilter') }}</li>
                                         <li
                                             :class="itemClasses(getColumn(rowIndex, index), item)"
-                                            v-for="item in column.filters"
+                                            v-for="(item,index) in column.filters"
+                                            :key="index"
                                             @click="handleSelect(getColumn(rowIndex, index)._index, item.value)">{{ item.label }}</li>
                                     </ul>
                                 </div>
@@ -222,7 +226,71 @@
                 } else {
                     return this.headRows[rowIndex][index];
                 }
-            }
-        }
+            },
+            //自定义列宽拖拽
+			findParentTh(target){
+				if(target.tagName.toUpperCase()=="TH"){
+					return target;
+				}else{
+					let parent = target;
+					do{
+						parent = parent.parentNode;
+					}while(parent.tagName.toUpperCase()!="TH");
+					return parent;
+				}
+			},
+			ewResizeDown(e,index,column){
+				let {clientX,offsetX,target} = e;
+				let {offsetWidth} = target;
+                let parentTh = this.findParentTh(target);
+                this.currentCell = parentTh.children[0];	    
+                this.currentTh = parentTh;            
+				if(parentTh.offsetWidth-target.offsetWidth>2||offsetWidth-offsetX>=10||column.ewResize==false||column.width==undefined||column.type||column.fixed) return;
+				this.index = index*1;
+				this.startX = clientX;
+				this.ewResize = true;
+				document.body.style.userSelect = "none";
+				this.$emit("on-ewResizeBegin",clientX);
+			},
+			mousemove({clientX}){
+				if(!this.ewResize) return;
+				this.$emit("on-ewResize",clientX);
+			},
+			mouseup({ clientX }) {
+				//若已经是非拖拽模式，就啥也别干，返回
+				if(this.ewResize==false) return;
+
+				document.body.style.userSelect = "auto";
+				this.ewResize = false;
+                let offsetX = clientX - this.startX;
+                //若改变后的列宽（this.currentTh.offsetWidth + offsetX）比currentCell的宽度还要小
+                if(this.currentCell.offsetWidth >= this.currentTh.offsetWidth + offsetX){
+                    //那就调整其改变的宽度刚好等于currentCell宽度，
+                    offsetX = this.currentCell.offsetWidth - this.currentTh.offsetWidth + 3;
+                }
+				this.$emit("on-ewResizeFinish",{index:this.index,offsetX});				
+			},
+			thMousemove({offsetX,target},column){	
+                let parentTh = this.findParentTh(target);	
+				if(parentTh.offsetWidth-target.offsetWidth>2||column.ewResize==false||column.width==undefined||column.type||column.fixed) {
+					parentTh.style.cursor="";
+					return;
+				}
+				let {offsetWidth} = target;				
+				if(this.ewResize == true||offsetWidth-offsetX<10){
+					target.style.cursor="ew-resize";
+				}else{
+					target.style.cursor="";
+				}
+			}
+        },
+        mounted(){
+			window.addEventListener("mousemove", this.mousemove);
+			window.addEventListener("mouseup", this.mouseup);
+		},
+		beforeDestroy(){
+			window.removeEventListener("mousemove", this.mousemove);
+			window.removeEventListener("mouseup", this.mouseup);
+		}
     };
 </script>
