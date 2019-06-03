@@ -4,14 +4,14 @@
         <template v-if="renderType === 'selection'">
             <Checkbox :value="checked" @click.native.stop="handleClick" @on-change="toggleSelect" :disabled="disabled"></Checkbox>
         </template>
-        <template v-if="renderType === 'html'"><span v-html="row[column.key]"></span></template>
+        <template v-if="renderType === 'html'"><span v-html="handleRow?handleRow(row,column):row[column.key]"></span></template>
         <template v-if="renderType === 'normal'">
             <template v-if="column.tooltip">
-                <Tooltip transfer :content="row[column.key]" :theme="tableRoot.tooltipTheme" :disabled="!showTooltip" :max-width="300" class="ivu-table-cell-tooltip">
-                    <span ref="content" @mouseenter="handleTooltipIn" @mouseleave="handleTooltipOut" class="ivu-table-cell-tooltip-content">{{ row[column.key] }}</span>
+                <Tooltip transfer :content="handleRow?handleRow(row,column):row[column.key]" :theme="tableRoot.tooltipTheme" :disabled="!showTooltip" :max-width="300" class="ivu-table-cell-tooltip">
+                    <span ref="content" @mouseenter="handleTooltipIn" @mouseleave="handleTooltipOut" class="ivu-table-cell-tooltip-content">{{ handleRow?handleRow(row,column):row[column.key] }}</span>
                 </Tooltip>
             </template>
-            <span v-else>{{row[column.key]}}</span>
+            <span v-else>{{handleRow?handleRow(row,column):row[column.key]}}</span>
         </template>
         <template v-if="renderType === 'expand' && !row._disableExpand">
             <div :class="expandCls" @click="toggleExpand">
@@ -54,7 +54,9 @@
             fixed: {
                 type: [Boolean, String],
                 default: false
-            }
+            },
+            // 自定义函数对row进行处理
+            handleRow: Function
         },
         data () {
             return {

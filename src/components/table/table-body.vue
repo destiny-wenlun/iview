@@ -1,7 +1,7 @@
 <template>
     <table cellspacing="0" cellpadding="0" border="0" :style="styleObject">
         <colgroup>
-            <col v-for="(column, index) in columns" :width="setCellWidth(column)">
+            <col v-for="(column, index) in columns" :key="index" :width="setCellWidth(column)">
         </colgroup>
         <tbody :class="[prefixCls + '-tbody']">
             <template v-for="(row, index) in data">
@@ -14,7 +14,7 @@
                     @mouseleave.native.stop="handleMouseOut(row._index)"
                     @click.native="clickCurrentRow(row._index)"
                     @dblclick.native.stop="dblclickCurrentRow(row._index)">
-                    <td v-for="column in columns" :class="alignCls(column, row)">
+                    <td v-for="(column,index) in columns" :key="index" :class="alignCls(column, row)">
                         <table-cell
                             :fixed="fixed"
                             :prefix-cls="prefixCls"
@@ -26,10 +26,11 @@
                             :checked="rowChecked(row._index)"
                             :disabled="rowDisabled(row._index)"
                             :expanded="rowExpanded(row._index)"
+                            :handle-row="handleRow"
                         ></table-cell>
                     </td>
                 </table-tr>
-                <tr v-if="rowExpanded(row._index)" :class="{[prefixCls + '-expanded-hidden']: fixed}">
+                <tr v-if="rowExpanded(row._index)" :key="row._index" :class="{[prefixCls + '-expanded-hidden']: fixed}">
                     <td :colspan="columns.length" :class="prefixCls + '-expanded-cell'">
                         <Expand :key="rowKey ? row._rowKey : index" :row="row" :render="expandRender" :index="row._index"></Expand>
                     </td>
@@ -67,7 +68,9 @@
             rowKey: {
                 type: Boolean,
                 default: false
-            }
+            },
+            // 自定义函数对row进行处理
+            handleRow: Function
         },
         computed: {
             expandRender () {

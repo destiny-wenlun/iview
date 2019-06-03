@@ -23,7 +23,8 @@
                     :data="rebuildData"
                     :row-key="rowKey"
                     :columns-width="columnsWidth"
-                    :obj-data="objData"></table-body>
+                    :obj-data="objData"
+                    :handle-row="handleRow"></table-body>
             </div>
             <div
                 :class="[prefixCls + '-tip']" :style="bodyStyle" @scroll="handleBodyScroll"
@@ -62,7 +63,8 @@
                         :data="rebuildData"
                         :row-key="rowKey"
                         :columns-width="columnsWidth"
-                        :obj-data="objData"></table-body>
+                        :obj-data="objData"
+                        :handle-row="handleRow"></table-body>
                 </div>
             </div>
             <div :class="[prefixCls + '-fixed-right']" :style="fixedRightTableStyle" v-if="isRightFixed">
@@ -88,7 +90,8 @@
                         :data="rebuildData"
                         :row-key="rowKey"
                         :columns-width="columnsWidth"
-                        :obj-data="objData"></table-body>
+                        :obj-data="objData"
+                        :handle-row="handleRow"></table-body>
                 </div>
             </div>
             <div :class="[prefixCls + '-fixed-right-header']" :style="fixedRightHeaderStyle" v-if="isRightFixed"></div>
@@ -208,7 +211,9 @@
             rowKey: {
                 type: Boolean,
                 default: false
-            }
+            },
+            // 自定义函数对row进行处理
+            handleRow: Function
         },
         data () {
             const colsWithId = this.makeColumnsId(this.columns);
